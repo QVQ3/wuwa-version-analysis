@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鸣潮版本节奏分析</title>
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --card: #ffffff;
+    --ink: #2c2c2a;
+    --muted: #888780;
+    --line: #e4e2da;
+    --blue: #185fa5;
+    --blue-bg: #e6f1fb;
+    --amber: #ba7517;
+    --amber-bg: #faeeda;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+    padding: 40px 20px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 26px; font-weight: 600; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  h2 { font-size: 18px; font-weight: 600; margin: 32px 0 12px; padding-left: 10px; border-left: 4px solid var(--blue); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; margin-bottom: 16px; }
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stat { flex: 1; min-width: 120px; background: var(--blue-bg); border-radius: 12px; padding: 18px; text-align: center; }
+  .stat .num { font-size: 30px; font-weight: 700; color: var(--blue); }
+  .stat .lab { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; }
+  .concl { background: var(--amber-bg); border-radius: 12px; padding: 18px 20px; }
+  .concl li { margin-left: 20px; margin-bottom: 8px; }
+  code { background: #f0eee8; padding: 2px 6px; border-radius: 4px; font-family: "SF Mono", Consolas, monospace; font-size: 13px; }
+  pre { background: #2c2c2a; color: #e8e6df; border-radius: 10px; padding: 16px; overflow-x: auto; font-size: 13px; margin: 12px 0; }
+  pre code { background: none; padding: 0; color: inherit; }
+  .tag { display: inline-block; background: var(--blue-bg); color: var(--blue); font-size: 12px; border-radius: 20px; padding: 2px 10px; margin: 2px 4px 2px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>鸣潮版本节奏分析</h1>
+  <div class="sub">第一个真实数据分析项目 · 2026-10-02 · 数据 1.0 公测 → 3.7</div>
+
+  <h2>三个核心数字</h2>
+  <div class="stats">
+    <div class="stat"><div class="num">41 天</div><div class="lab">平均间隔（约 6 周）</div></div>
+    <div class="stat"><div class="num">49 天</div><div class="lab">最长 · 1.4→2.0</div></div>
+    <div class="stat"><div class="num">32 天</div><div class="lab">最短 · 3.4→3.5</div></div>
+  </div>
+
+  <h2>分大版本看节奏</h2>
+  <div class="card">
+    <table>
+      <tr><th>大版本</th><th>平均间隔</th><th>间隔个数</th></tr>
+      <tr><td>1.x</td><td>44.8 天</td><td>5</td></tr>
+      <tr><td>2.x</td><td>39.7 天</td><td>9</td></tr>
+      <tr><td>3.x</td><td>39.9 天</td><td>9</td></tr>
+    </table>
+  </div>
+
+  <h2>结论</h2>
+  <div class="concl">
+    <ul>
+      <li><b>早期慢、后来提速并趋稳</b>：1.x 时代约 45 天一个版本，进入 2.x 提速到约 40 天，3.x 延续并稳定。</li>
+      <li><b>大版本前明显拉长</b>：1.4→2.0 隔 49 天，是全周期最久，符合"憋大版本"的直觉。</li>
+      <li><b>整体稳定在 6 周左右</b>：22 个版本约 860 天，平均 41 天。</li>
+    </ul>
+  </div>
+
+  <h2>用到的 SQL 知识</h2>
+  <div>
+    <span class="tag">julianday() 日期转天数</span>
+    <span class="tag">自连接</span>
+    <span class="tag">相关子查询</span>
+    <span class="tag">CAST 取主版本号</span>
+    <span class="tag">GROUP BY + AVG/COUNT</span>
+    <span class="tag">ROUND 四舍五入</span>
+  </div>
+
+  <h2>核心查询</h2>
+  <pre><code>SELECT
+  CAST(a.ver AS INTEGER) AS 大版本,
+  COUNT(*) AS 间隔个数,
+  ROUND(AVG(julianday(b.release_date) - julianday(a.release_date)), 1) AS 平均间隔
+FROM version a
+JOIN version b
+  ON b.ver = (SELECT MIN(ver) FROM version WHERE ver &gt; a.ver)
+GROUP BY CAST(a.ver AS INTEGER)
+ORDER BY 大版本;</code></pre>
+</div>
+</body>
+</html>
